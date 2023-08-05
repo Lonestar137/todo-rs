@@ -404,15 +404,26 @@ fn main() {
                 {
                     if panel == Status::Todo {
                         ui.label_fixed_width("TODO", x / 2, HIGHLIGHT_PAIR);
+
+                        // remove any todo items that match the escape code in todos
+                        todos = todos.into_iter().filter(|x| x != "u{1b}").collect();
+
                         // TODO(#27): the item lists don't have a scroll area
                         for (index, todo) in todos.iter_mut().enumerate() {
                             if index == todo_curr {
                                 if editing {
                                     ui.edit_field(todo, &mut editing_cursor, x / 2);
 
-                                    if let Some('\n') = ui.key.take().map(|x| x as u8 as char) {
+                                    let key: Option<char> = ui.key.take().map(|x| x as u8 as char);
+
+                                    if key == Some('\u{1b}') {
+                                        // stop editing if escape pressed
+                                        *todo = "u{1b}".to_string();
                                         editing = false;
-                                    }
+                                    } else if key == Some('\n') {
+                                        editing = false;
+                                    } 
+
                                 } else {
                                     ui.label_fixed_width(
                                         &format!("- [ ] {}", todo),
@@ -485,7 +496,7 @@ fn main() {
 
                                     if let Some('\n') = ui.key.take().map(|x| x as u8 as char) {
                                         editing = false;
-                                    }
+                                    }                                 
                                 } else {
                                     ui.label_fixed_width(
                                         &format!("- [x] {}", done),
